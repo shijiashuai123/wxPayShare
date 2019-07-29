@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>testShare</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="./jssdk1.4.0.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .picBox {
+            width: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dollarIcon {
+            position: absolute;
+            right: 5%;
+        }
+
+        .pic {
+            width: 94%;
+            height: 40px;
+            font-size: 16px;
+            display: block;
+            border: none;
+            outline: none;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            padding-left: 5px;
+            -webkit-appearance: none
+        }
+
+        .confirmBtn {
+            width: 96%;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border: 0px;
+            border: 1px solid #eee;
+            background-color: #409EFF;
+            color: #fff;
+            font-size: 24px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width: 100%; height: 60px;"></div>
+    <div class="share">
+        <div>点击右上角分享好友及朋友圈</div>
+        <button class="confirmBtn" id="closeShareBtn">关闭分享功能</button>
+        <button class="confirmBtn" id="showShareBtn">打开分享功能</button>
+    </div>
+    <div id="log"></div>
+    <div id="err"></div>
+    <script src="./jquery-1.9.1.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // $("#log").html('开始获取参数')
+            let url = location.href
+            // if (!sliceUrl(url, 'code')) {
+            //     var src =
+            //         'https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx1d242ae3d21e296f&redirect_uri=' +
+            //         encodeURIComponent(url) + '&response_type=code' +
+            //         '&scope=snsapi_base&state=STATE#wechat_redirect';
+            // }
+            // alert(url)
+            console.log(url)
+            try {
+                $.ajax({
+                    url: `https://tweixin.itinga.cn/jsconfig?url=${encodeURIComponent(url.split("#")[0])}&weixinId=gh_2f102926e23e`,
+                    type: 'get',
+                    success: (res) => {
+                        // $("#log").html(JSON.stringify(res))
+                        // alert(JSON.stringify(res))
+                        registSdk(res)
+                    },
+                    error: (err) => {
+                        $("#log").html(JSON.stringify(err))
+                        console.log(err)
+                    }
+                })
+            } catch (err) {
+                $('#err').html(JSON.stringify(err))
+            }
+
+            //通过config接口注入权限验证配置
+            function registSdk(data) {
+                // $("#log").html('通过config接口注入权限验证配置')
+                console.log(data)
+                wx.config({
+                    debug: false,
+                    appId: data.appId,
+                    timestamp: data.timestamp,
+                    nonceStr: data.nonceStr,
+                    signature: data.signature,
+                    jsApiList: [
+                        'updateAppMessageShareData', // 分享朋友及qq
+                        'updateTimelineShareData', // 分享到朋友圈”及“分享到QQ空间
+                        'hideAllNonBaseMenuItem', //隐藏所有按钮
+                        'hideMenuItems', // 隐藏部分
+                        'showMenuItems', // 显示部分
+                    ]
+                })
+                wx.ready(function () { //需在用户可能点击分享按钮前就先调用
+                    console.log('开始')
+                    startShareFun()
+                    startShareFun1()
+                });
+                wx.error(function (res) {
+                    alert(JSON.stringify(res))
+                });
+            }
+
+            $("#closeShareBtn").click(() => {
+                wx.hideMenuItems({
+                    menuList: ["menuItem:share:appMessage", "menuItem:share:timeline",
+                        "menuItem:share:qq",
+                        "menuItem:share:weiboApp", "menuItem:share:facebook",
+                        "menuItem:share:QZone"
+                    ]
+                });
+                alert('成功')
+            })
+
+            $("#showShareBtn").click(() => {
+                wx.showMenuItems({
+                    menuList: ["menuItem:share:appMessage", "menuItem:share:timeline",
+                        "menuItem:share:qq",
+                        "menuItem:share:weiboApp", "menuItem:share:facebook",
+                        "menuItem:share:QZone"
+                    ]
+                })
+                alert('成功')
+            })
+            // 调用分享接口
+
+            function startShareFun() {
+                wx.updateAppMessageShareData({
+                    title: '测试', // 分享标题
+                    desc: "描述", // 分享描述
+                    imgUrl: 'http://cdn.itinga.cn/follow/articleTitle/aa49048c9e374603897e6af436c1ed92.jpg',
+                    link: 'http://tweixin.itinga.cn/vue/gh_2f102926e23e/index.html',
+                    success: function (res) {
+                        // alert(JSON.stringify(res))
+                        // alert('已分享');
+                    },
+                    cancel: function (res) {
+                        // alert(JSON.stringify(res))
+                        // alert('已取消');
+                    }
+                });
+                wx.checkJsApi({
+                    jsApiList: [
+                        'updateAppMessageShareData'
+                    ], // 需要检测的JS接口列表，所有JS接口列表见附录2,
+                    success: function (res) {
+                        // alert(res)
+                    }
+                });
+            }
+
+            function startShareFun1() {
+                wx.updateTimelineShareData({
+                    title: '测试', // 分享标题
+                    imgUrl: 'http://cdn.itinga.cn/follow/articleTitle/aa49048c9e374603897e6af436c1ed92.jpg',
+                    link: 'http://tweixin.itinga.cn/vue/h5pay/test.html',
+                    success: function (res) {
+                        // alert(JSON.stringify(res))
+                        // alert('已分享');
+                    },
+                    cancel: function (res) {
+                        // alert(JSON.stringify(res))
+                        // alert('已取消');
+                    }
+                });
+                wx.checkJsApi({
+                    jsApiList: [
+                        'updateTimelineShareData'
+                    ], // 需要检测的JS接口列表，所有JS接口列表见附录2,
+                    success: function (res) {
+                        // alert(res)
+                    }
+                });
+            }
+
+            function sliceUrl(url, par) {
+                var par1 = par + '='
+                var len = par.length + 1
+                if (url.indexOf(par1) !== -1) {
+                    var obj2 = url.substring(url.indexOf(par1), url.length)
+                    if (obj2.indexOf('&') !== -1) {
+                        return obj2.slice(obj2.indexOf(par1) + len, obj2.indexOf('&'))
+                    } else {
+                        if (obj2.indexOf('#') !== -1) {
+                            return obj2.slice(obj2.indexOf(par1) + len, obj2.indexOf('#'))
+                        } else {
+                            return obj2.slice(obj2.indexOf(par1) + len, obj2.length)
+                        }
+                    }
+                } else {
+                    return ''
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
